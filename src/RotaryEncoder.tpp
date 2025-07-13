@@ -6,17 +6,22 @@ RotaryEncoder<ID> *RotaryEncoder<ID>::instance = nullptr;
 
 template <int ID>
 RotaryEncoder<ID>::RotaryEncoder(int pin_a, int pin_b, int pin_sw, int counts_per_detent)
-    : pin_a(pin_a), pin_b(pin_b), pin_sw(pin_sw), counts_per_detent(counts_per_detent), _value(0), value(0),
-      debug_callback(nullptr), prev_a_state(0), prev_b_state(0)
-{
+    : pin_a(pin_a),
+      pin_b(pin_b),
+      pin_sw(pin_sw),
+      counts_per_detent(counts_per_detent),
+      _value(0),
+      value(0),
+      debug_callback(nullptr),
+      prev_a_state(0),
+      prev_b_state(0) {
   instance = this;
 }
 
 template <int ID>
-bool RotaryEncoder<ID>::begin(DebugCallback debug_callback)
-{
+bool RotaryEncoder<ID>::begin(DebugCallback debug_callback) {
   this->debug_callback = debug_callback;
-  
+
   pinMode(pin_a, INPUT_PULLUP);
   pinMode(pin_b, INPUT_PULLUP);
 
@@ -31,20 +36,16 @@ bool RotaryEncoder<ID>::begin(DebugCallback debug_callback)
 }
 
 template <int ID>
-void RotaryEncoder<ID>::handleEncoderISR()
-{
+void RotaryEncoder<ID>::handleEncoderISR() {
   static volatile uint8_t last_encoded = 0;
 
   uint8_t encoded = (digitalRead(instance->pin_a) << 1) | digitalRead(instance->pin_b);
   uint8_t sum = (last_encoded << 2) | encoded;
 
   // Only increment/decrement on valid transitions
-  if (sum == 0b1101 || sum == 0b0100 || sum == 0b0010 || sum == 0b1011)
-  {
+  if (sum == 0b1101 || sum == 0b0100 || sum == 0b0010 || sum == 0b1011) {
     instance->_value++;
-  }
-  else if (sum == 0b1110 || sum == 0b0111 || sum == 0b0001 || sum == 0b1000)
-  {
+  } else if (sum == 0b1110 || sum == 0b0111 || sum == 0b0001 || sum == 0b1000) {
     instance->_value--;
   }
 
@@ -54,12 +55,9 @@ void RotaryEncoder<ID>::handleEncoderISR()
   int counts_per_detent = instance->counts_per_detent;
 
   // Use proper rounding for division to handle zero-crossing
-  if (instance->_value >= 0)
-  {
+  if (instance->_value >= 0) {
     new_value = (instance->_value + counts_per_detent / 2) / counts_per_detent;
-  }
-  else
-  {
+  } else {
     new_value = (instance->_value - counts_per_detent / 2) / counts_per_detent;
   }
 
@@ -67,8 +65,7 @@ void RotaryEncoder<ID>::handleEncoderISR()
 }
 
 template <int ID>
-long RotaryEncoder<ID>::getValue()
-{
+long RotaryEncoder<ID>::getValue() {
   noInterrupts();
   long current_value = value;
   interrupts();

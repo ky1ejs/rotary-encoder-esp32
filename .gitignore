@@ -1,0 +1,75 @@
+# PlatformIO
+.pio/
+.pioenvs/
+.piolibdeps/
+.clang_complete
+.gcc-flags.json
+.pio
+.pioenvs
+.piolibdeps
+
+# VS Code - exclude dynamic files but keep configuration
+.vscode/.browse.c_cpp.db*
+.vscode/launch.json
+.vscode/ipch
+.vscode/c_cpp_properties.json
+
+# ESP32 specific
+sdkconfig
+sdkconfig.old
+build/
+*.bin
+*.elf
+*.map
+
+# General
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.so
+*.o
+*.a
+*.dylib
+*.dll
+*.exe
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Configuration files with credentials
+src/config.h
+
+# Certificate files
+*.pem
+*.key
+*.crt
+*.cert
+
+# Formatter backups
+*.backup
+
+# Static analysis results
+cppcheck-results.txt
+cppcheck-full-results.txt
+cppcheck-output.txt
+cppcheck-*.txt

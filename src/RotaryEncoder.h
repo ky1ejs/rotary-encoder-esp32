@@ -1,7 +1,7 @@
 /*
  * RotaryEncoder.h - ESP32 Rotary Encoder Library with Detent Filtering
  * Supports PEC11 and similar quadrature encoders with push buttons
- * 
+ *
  * Features:
  * - Template-based design supporting multiple encoders
  * - Detent filtering with configurable counts per detent
@@ -17,16 +17,16 @@
 
 template <int ID>
 class RotaryEncoder {
-public:
+ public:
   using DebugCallback = void (*)(int id, int pin_a, int pin_b);
-  
+
   RotaryEncoder(int pin_a, int pin_b, int pin_sw = -1, int counts_per_detent = 4);
   bool begin(DebugCallback debug_callback = nullptr);
   long getValue();
   static RotaryEncoder<ID>* instance;
   static void handleEncoderISR();
 
-private:
+ private:
   int pin_a;
   int pin_b;
   int pin_sw;

@@ -12,8 +12,16 @@ jobs:
     
     strategy:
       matrix:
-        example: [basic_usage]
-        board: [esp32-c6-devkitc-1, esp32dev, esp32-s3-devkitc-1]
+        include:
+          - example: basic_usage
+            board: esp32-c6-devkitc-1
+            platform: https://github.com/pioarduino/platform-espressif32/releases/download/54.03.20/platform-espressif32.zip
+          - example: basic_usage
+            board: esp32dev
+            platform: espressif32
+          - example: basic_usage
+            board: esp32-s3-devkitc-1
+            platform: espressif32
     
     steps:
     - name: Checkout repository
@@ -51,7 +59,7 @@ jobs:
         # Create a temporary platformio.ini for this board
         cat > platformio_temp.ini << EOF
         [env:${{ matrix.board }}]
-        platform = espressif32
+        platform = ${{ matrix.platform }}
         board = ${{ matrix.board }}
         framework = arduino
         lib_deps = 
@@ -70,7 +78,7 @@ jobs:
         mkdir -p test_project/src
         cat > test_project/platformio.ini << EOF
         [env:${{ matrix.board }}]
-        platform = espressif32
+        platform = ${{ matrix.platform }}
         board = ${{ matrix.board }}
         framework = arduino
         lib_deps = 
