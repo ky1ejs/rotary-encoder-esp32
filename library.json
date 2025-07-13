@@ -1,0 +1,35 @@
+{
+  "name": "RotaryEncoder ESP32",
+  "version": "1.0.0",
+  "description": "High-performance rotary encoder library for ESP32 with detent filtering and multi-encoder support",
+  "keywords": [
+    "rotary",
+    "encoder",
+    "esp32",
+    "quadrature",
+    "interrupt",
+    "detent",
+    "template",
+    "input"
+  ],
+  "authors": [
+    {
+      "name": "Kyle Johnson",
+      "email": "kyle@kylejs.com",
+      "url": "https://kylejs.com"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ky1ejs/rotary-encoder-esp32.git"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/ky1ejs/rotary-encoder-esp32",
+  "frameworks": ["arduino"],
+  "platforms": ["espressif32"],
+  "headers": ["RotaryEncoder.h"],
+  "export": {
+    "include": "src"
+  },
+  "examples": "examples/*/*.ino"
+}

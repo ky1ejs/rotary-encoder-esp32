@@ -1,0 +1,21 @@
+#######################################
+# Syntax Coloring Map For RotaryEncoder ESP32
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+RotaryEncoder	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+begin	KEYWORD2
+getValue	KEYWORD2
+handleEncoderISR	KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
