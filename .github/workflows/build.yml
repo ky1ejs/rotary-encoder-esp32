@@ -1,0 +1,107 @@
+name: Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        example: [basic_usage]
+        board: [esp32-c6-devkitc-1, esp32dev, esp32-s3-devkitc-1]
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Cache pip packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Cache PlatformIO
+      uses: actions/cache@v4
+      with:
+        path: ~/.platformio
+        key: ${{ runner.os }}-pio-${{ hashFiles('**/platformio.ini') }}
+        restore-keys: |
+          ${{ runner.os }}-pio-
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install PlatformIO
+      run: |
+        python -m pip install --upgrade pip
+        pip install platformio
+
+    - name: Build library examples
+      run: |
+        cd examples/${{ matrix.example }}
+        # Create a temporary platformio.ini for this board
+        cat > platformio_temp.ini << EOF
+        [env:${{ matrix.board }}]
+        platform = espressif32
+        board = ${{ matrix.board }}
+        framework = arduino
+        lib_deps = 
+            file://../../  ; Use the library from parent directory
+        monitor_speed = 115200
+        build_flags = 
+            -D CORE_DEBUG_LEVEL=3
+        EOF
+        
+        # Build using the temporary config
+        pio run -c platformio_temp.ini --environment ${{ matrix.board }}
+
+    - name: Build library in isolation
+      run: |
+        # Create a minimal test project to verify library builds standalone
+        mkdir -p test_project/src
+        cat > test_project/platformio.ini << EOF
+        [env:${{ matrix.board }}]
+        platform = espressif32
+        board = ${{ matrix.board }}
+        framework = arduino
+        lib_deps = 
+            file://../  ; Use the library from parent directory
+        EOF
+        
+        cat > test_project/src/main.cpp << EOF
+        #include <Arduino.h>
+        #include <RotaryEncoder.h>
+        
+        RotaryEncoder<0> encoder(2, 3);
+        
+        void setup() {
+          encoder.begin();
+        }
+        
+        void loop() {
+          encoder.getValue();
+          delay(100);
+        }
+        EOF
+        
+        cd test_project
+        pio run --environment ${{ matrix.board }}
+
+    - name: Archive build artifacts
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-logs-${{ matrix.example }}-${{ matrix.board }}
+        path: |
+          examples/${{ matrix.example }}/.pio/build/*/
+          test_project/.pio/build/*/
+        retention-days: 7

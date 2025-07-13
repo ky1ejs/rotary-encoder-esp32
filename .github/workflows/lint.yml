@@ -1,0 +1,200 @@
+name: Code Quality
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install clang-format
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang-format
+
+    - name: Install cppcheck
+      run: |
+        sudo apt-get install -y cppcheck
+
+    - name: Check C++ formatting
+      run: |
+        # Create clang-format configuration
+        cat > .clang-format << EOF
+        ---
+        Language: Cpp
+        BasedOnStyle: Google
+        IndentWidth: 2
+        TabWidth: 2
+        UseTab: Never
+        ColumnLimit: 100
+        AccessModifierOffset: -1
+        AlignAfterOpenBracket: Align
+        AlignConsecutiveAssignments: false
+        AlignConsecutiveDeclarations: false
+        AlignOperands: true
+        AlignTrailingComments: true
+        AllowAllParametersOfDeclarationOnNextLine: true
+        AllowShortBlocksOnASingleLine: false
+        AllowShortCaseLabelsOnASingleLine: false
+        AllowShortFunctionsOnASingleLine: All
+        AllowShortIfStatementsOnASingleLine: true
+        AllowShortLoopsOnASingleLine: true
+        AlwaysBreakAfterDefinitionReturnType: None
+        AlwaysBreakAfterReturnType: None
+        AlwaysBreakBeforeMultilineStrings: true
+        AlwaysBreakTemplateDeclarations: true
+        BinPackArguments: true
+        BinPackParameters: true
+        BreakBeforeBinaryOperators: None
+        BreakBeforeBraces: Attach
+        BreakBeforeTernaryOperators: true
+        BreakConstructorInitializersBeforeComma: false
+        BreakAfterJavaFieldAnnotations: false
+        BreakStringLiterals: true
+        Cpp11BracedListStyle: true
+        DerivePointerAlignment: true
+        DisableFormat: false
+        ExperimentalAutoDetectBinPacking: false
+        ForEachMacros: [ foreach, Q_FOREACH, BOOST_FOREACH ]
+        IncludeCategories:
+          - Regex: '^<.*\.h>'
+            Priority: 1
+          - Regex: '^<.*'
+            Priority: 2
+          - Regex: '.*'
+            Priority: 3
+        IncludeIsMainRegex: '([-_](test|unittest))?$'
+        IndentCaseLabels: true
+        IndentWrappedFunctionNames: false
+        KeepEmptyLinesAtTheStartOfBlocks: false
+        MacroBlockBegin: ''
+        MacroBlockEnd: ''
+        MaxEmptyLinesToKeep: 1
+        NamespaceIndentation: None
+        PenaltyBreakBeforeFirstCallParameter: 1
+        PenaltyBreakComment: 300
+        PenaltyBreakFirstLessLess: 120
+        PenaltyBreakString: 1000
+        PenaltyExcessCharacter: 1000000
+        PenaltyReturnTypeOnItsOwnLine: 200
+        PointerAlignment: Left
+        ReflowComments: true
+        SortIncludes: true
+        SpaceAfterCStyleCast: false
+        SpaceAfterTemplateKeyword: true
+        SpaceBeforeAssignmentOperators: true
+        SpaceBeforeParens: ControlStatements
+        SpaceInEmptyParentheses: false
+        SpacesBeforeTrailingComments: 2
+        SpacesInAngles: false
+        SpacesInContainerLiterals: true
+        SpacesInCStyleCastParentheses: false
+        SpacesInParentheses: false
+        SpacesInSquareBrackets: false
+        Standard: Auto
+        EOF
+
+        # Check formatting
+        echo "Checking C++ code formatting..."
+        find src/ examples/ -name "*.h" -o -name "*.cpp" -o -name "*.tpp" | while read file; do
+          echo "Checking $file"
+          clang-format --dry-run --Werror "$file"
+        done
+
+    - name: Run static analysis with cppcheck
+      run: |
+        echo "Running static analysis..."
+        cppcheck \
+          --enable=warning,performance,portability \
+          --std=c++11 \
+          --platform=unix32 \
+          --suppress=missingIncludeSystem \
+          --suppress=unmatchedSuppression \
+          --error-exitcode=1 \
+          --verbose \
+          --force \
+          -I src/ \
+          src/ examples/
+
+    - name: Check library manifest
+      run: |
+        echo "Validating library.json..."
+        python3 -c "
+        import json
+        import sys
+        
+        try:
+            with open('library.json', 'r') as f:
+                data = json.load(f)
+            
+            required_fields = ['name', 'version', 'description', 'keywords', 'authors', 'license', 'frameworks', 'platforms']
+            for field in required_fields:
+                if field not in data:
+                    print(f'ERROR: Missing required field: {field}')
+                    sys.exit(1)
+            
+            if not data['version']:
+                print('ERROR: Version cannot be empty')
+                sys.exit(1)
+                
+            print('library.json validation passed')
+        except json.JSONDecodeError as e:
+            print(f'ERROR: Invalid JSON in library.json: {e}')
+            sys.exit(1)
+        except Exception as e:
+            print(f'ERROR: {e}')
+            sys.exit(1)
+        "
+
+    - name: Check library properties
+      run: |
+        echo "Validating library.properties..."
+        if [ ! -f "library.properties" ]; then
+          echo "ERROR: library.properties not found"
+          exit 1
+        fi
+        
+        required_props="name version author maintainer sentence paragraph category architectures includes"
+        for prop in $required_props; do
+          if ! grep -q "^$prop=" library.properties; then
+            echo "ERROR: Missing required property: $prop"
+            exit 1
+          fi
+        done
+        
+        echo "library.properties validation passed"
+
+    - name: Validate example structure
+      run: |
+        echo "Checking example structure..."
+        for example_dir in examples/*/; do
+          if [ -d "$example_dir" ]; then
+            example_name=$(basename "$example_dir")
+            echo "Checking example: $example_name"
+            
+            if [ ! -f "$example_dir/platformio.ini" ]; then
+              echo "ERROR: Missing platformio.ini in $example_name"
+              exit 1
+            fi
+            
+            if [ ! -f "$example_dir/src/main.cpp" ]; then
+              echo "ERROR: Missing src/main.cpp in $example_name"
+              exit 1
+            fi
+            
+            # Check that main.cpp includes the library
+            if ! grep -q "#include.*RotaryEncoder" "$example_dir/src/main.cpp"; then
+              echo "ERROR: Example $example_name does not include RotaryEncoder library"
+              exit 1
+            fi
+          fi
+        done
+        
+        echo "Example structure validation passed"
